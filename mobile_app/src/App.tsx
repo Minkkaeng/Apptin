@@ -21,13 +21,45 @@ interface ChatMessage {
   time: string;
 }
 
+interface GroupFeedPost {
+  id: string;
+  author: string;
+  time: string;
+  score: number;
+  routineSummary: string;
+  likes: number;
+}
+
 export default function App() {
-  const [tab, setTab] = useState<'report' | 'chat' | 'routine' | 'social'>('report');
+  const [tab, setTab] = useState<'report' | 'chat' | 'routine' | 'social'>('social');
   const [mode, setMode] = useState<'mild' | 'balanced' | 'spicy'>('spicy');
   const [isGrayscale, setIsGrayscale] = useState(false);
   const [chatInput, setChatInput] = useState('');
+  const [groupCode] = useState('APPTIN-8291');
+  const [copied, setCopied] = useState(false);
+  const [myShared, setMyShared] = useState(false);
+
   const [chatLog, setChatLog] = useState<ChatMessage[]>([
     { sender: 'ai', text: '오늘 미디어 시청 시간이 145분으로 다소 길었습니다. 이유나 피로한 점이 있으셨나요?', time: '21:00' }
+  ]);
+
+  const [feedPosts, setFeedPosts] = useState<GroupFeedPost[]>([
+    {
+      id: '1',
+      author: '김개발',
+      time: '20:15',
+      score: 85,
+      routineSummary: 'VS Code 몰입 4시간 달성! 수면 전 흑백 모드 가동 완료.',
+      likes: 5
+    },
+    {
+      id: '2',
+      author: '이코딩',
+      time: '19:40',
+      score: 72,
+      routineSummary: '유튜브 숏츠 30분 미만 제한 성공. 책상 알람 배치함.',
+      likes: 3
+    }
   ]);
 
   const [log] = useState<MobileLog>({
@@ -50,20 +82,40 @@ export default function App() {
 
   const score = getDopamineLevel();
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(`https://apptin.app/join/${groupCode}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareMyRoutine = () => {
+    if (myShared) return;
+    const newPost: GroupFeedPost = {
+      id: Date.now().toString(),
+      author: '사용자 (나)',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      score: score,
+      routineSummary: `PC 몰입 210분 달성 및 알람 흑백모드 전환 실행 완료.`,
+      likes: 1
+    };
+    setFeedPosts([newPost, ...feedPosts]);
+    setMyShared(true);
+  };
+
+  const handleLike = (id: string) => {
+    setFeedPosts(feedPosts.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p));
+  };
+
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
     const userMsg: ChatMessage = { sender: 'user', text: chatInput, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    let aiText = '';
-
-    if (mode === 'spicy') {
-      aiText = `그렇군요. 하지만 변명보다는 내일 숏폼 타이머를 15분 줄여보는 행동이 훨씬 유익합니다.`;
-    } else if (mode === 'mild') {
-      aiText = `오늘 피곤하셨군요! 스스로를 너무 자책하지 마시고 내일 가볍게 10분만 줄여봐요.`;
-    } else {
-      aiText = `원인을 파악하신 것은 긍정적입니다. 내일은 밤 10시 흑백 모드를 활용해 보세요.`;
-    }
+    let aiText = mode === 'spicy'
+      ? `그렇군요. 하지만 변명보다는 내일 숏폼 타이머를 15분 줄여보는 행동이 훨씬 유익합니다.`
+      : mode === 'mild'
+      ? `오늘 피곤하셨군요! 스스로를 너무 자책하지 마시고 내일 가볍게 10분만 줄여봐요.`
+      : `원인을 파악하신 것은 긍정적입니다. 내일은 밤 10시 흑백 모드를 활용해 보세요.`;
 
     const aiMsg: ChatMessage = { sender: 'ai', text: aiText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
     setChatLog(prev => [...prev, userMsg, aiMsg]);
@@ -266,42 +318,99 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 4: BADGES & LEADERBOARD */}
+        {/* TAB 4: GROUP & ROUTINE SHARING */}
         {tab === 'social' && (
           <div>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f8fafc' }}>달성 뱃지 & 팀 랭킹</h3>
-            
-            {/* Badges Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '16px' }}>
-              <div style={{ background: '#1e293b', padding: '12px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8' }}>PC 몰입왕</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>PC 작업 3시간 이상 달성</div>
-              </div>
-              <div style={{ background: '#1e293b', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#cbd5e1' }}>4일 연속 실천</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>4일 연속 갓생 루틴 진행</div>
-              </div>
-            </div>
-
-            {/* Leaderboard */}
-            <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#94a3b8' }}>개발 스터디 루틴 랭킹</h4>
-            <div style={{ background: '#1e293b', borderRadius: '8px', border: '1px solid #334155', padding: '8px' }}>
-              {[
-                { rank: 1, name: '사용자 (나)', score: 78, status: '우수' },
-                { rank: 2, name: '김개발님', score: 72, status: '보통' },
-                { rank: 3, name: '이코드님', score: 65, status: '보통' }
-              ].map((user) => (
-                <div key={user.rank} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', borderBottom: user.rank !== 3 ? '1px solid #334155' : 'none', fontSize: '12px' }}>
-                  <span>{user.rank}위. {user.name}</span>
-                  <span style={{ color: '#38bdf8', fontWeight: '600' }}>{user.score}점</span>
+            {/* Group Header & Invite Link */}
+            <section style={{ background: '#1e293b', borderRadius: '10px', padding: '14px', border: '1px solid #38bdf8', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '14px', color: '#38bdf8', fontWeight: '700' }}>알고리즘 & 갓생 루틴 모임</h3>
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>그룹원 5명 참여 중</span>
                 </div>
-              ))}
-            </div>
+                <button
+                  onClick={handleCopyLink}
+                  style={{
+                    padding: '6px 12px',
+                    background: copied ? '#22c55e' : '#38bdf8',
+                    color: '#0f172a',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {copied ? '링크 복사됨!' : '초대 링크 공유'}
+                </button>
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b', background: '#0f172a', padding: '6px 10px', borderRadius: '4px' }}>
+                초대 코드: <strong>{groupCode}</strong> (링크 공유 시 누구나 참여)
+              </div>
+            </section>
+
+            {/* Share My Today Routine Button */}
+            <button
+              onClick={handleShareMyRoutine}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: myShared ? '#334155' : '#22c55e',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '13px',
+                cursor: 'pointer',
+                marginBottom: '16px'
+              }}
+            >
+              {myShared ? '오늘의 루틴 공유 완료' : '오늘 내 하루 루틴 그룹에 공유하기'}
+            </button>
+
+            {/* Group Leaderboard Ranking */}
+            <section style={{ marginBottom: '16px' }}>
+              <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>오늘의 그룹 루틴 순위</h4>
+              <div style={{ background: '#1e293b', borderRadius: '8px', border: '1px solid #334155', padding: '8px' }}>
+                {[
+                  { rank: 1, name: '김개발', score: 85, status: '몰입왕' },
+                  { rank: 2, name: '사용자 (나)', score: score, status: '실천중' },
+                  { rank: 3, name: '이코딩', score: 72, status: '순항' }
+                ].map((u) => (
+                  <div key={u.rank} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', borderBottom: u.rank !== 3 ? '1px solid #334155' : 'none', fontSize: '12px' }}>
+                    <span style={{ color: '#f8fafc' }}>{u.rank}위. {u.name} <span style={{ fontSize: '10px', color: '#94a3b8' }}>({u.status})</span></span>
+                    <span style={{ color: '#38bdf8', fontWeight: '700' }}>{u.score}점</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Group Member Routine Sharing Feed */}
+            <section style={{ background: '#1e293b', borderRadius: '10px', padding: '14px', border: '1px solid #334155' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#f8fafc', fontWeight: '700' }}>그룹원 루틴 피드</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {feedPosts.map((post) => (
+                  <div key={post.id} style={{ background: '#0f172a', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8' }}>{post.author}</span>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>{post.time} | 점수 {post.score}점</span>
+                    </div>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#e2e8f0', lineHeight: '1.4' }}>{post.routineSummary}</p>
+                    <button
+                      onClick={() => handleLike(post.id)}
+                      style={{ background: 'transparent', border: '1px solid #334155', color: '#fbbf24', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
+                    >
+                      자극받음 & 칭찬하기 ({post.likes})
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
       </main>
 
-      {/* Bottom Tab Navigation Bar */}
+      {/* Bottom Navigation */}
       <nav style={{
         position: 'fixed',
         bottom: 0,
@@ -312,7 +421,7 @@ export default function App() {
         background: '#1e293b',
         borderTop: '1px solid #334155',
         display: 'flex',
-        justifyContent: 'space-around',
+        justify.content: 'space-around',
         padding: '10px 0',
         zIndex: 100
       }}>
@@ -320,7 +429,7 @@ export default function App() {
           { id: 'report', label: '리포트' },
           { id: 'chat', label: 'AI 상담' },
           { id: 'routine', label: '루틴설정' },
-          { id: 'social', label: '랭킹/뱃지' }
+          { id: 'social', label: '그룹&공유' }
         ].map((t) => (
           <button
             key={t.id}
