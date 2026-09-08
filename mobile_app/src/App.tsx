@@ -160,7 +160,6 @@ export default function App() {
     setFeedPosts(feedPosts.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p));
   };
 
-  // Live Gemini AI Chat Integration
   const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isAiLoading) return;
@@ -341,7 +340,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: AI INTERACTIVE CHAT (LIVE GEMINI API INTEGRATED) */}
+        {/* TAB 2: AI INTERACTIVE CHAT */}
         {tab === 'chat' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -527,7 +526,7 @@ export default function App() {
         background: '#1e293b',
         borderTop: '1px solid #334155',
         display: 'flex',
-        justify.content: 'space-around',
+        justifyContent: 'space-around',
         padding: '10px 0',
         zIndex: 100
       }}>
