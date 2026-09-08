@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { askGeminiCoach } from './services/aiService';
 
 interface AppUsage {
   pkg: string;
@@ -41,7 +42,6 @@ const STORAGE_KEYS = {
 export default function App() {
   const [tab, setTab] = useState<'report' | 'chat' | 'routine' | 'social'>('report');
   
-  // Persistence States
   const [mode, setMode] = useState<'mild' | 'balanced' | 'spicy'>(() => {
     return (localStorage.getItem(STORAGE_KEYS.MODE) as any) || 'spicy';
   });
@@ -66,11 +66,11 @@ export default function App() {
   });
 
   const [chatInput, setChatInput] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [groupCode] = useState('APPTIN-8291');
   const [copied, setCopied] = useState(false);
   const [newRoutineText, setNewRoutineText] = useState('');
 
-  // Sync LocalStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.MODE, mode);
   }, [mode]);
@@ -92,7 +92,6 @@ export default function App() {
     localStorage.setItem(STORAGE_KEYS.FEED, JSON.stringify(feedPosts));
   }, [feedPosts]);
 
-  // Calculate Dopamine Score Dynamically
   const getDopamineLevel = () => {
     if (!log || !log.apps.length) return 0;
     const mediaMins = log.apps.filter(a => a.type === 'Media' || a.type === 'Social').reduce((acc, curr) => acc + curr.mins, 0);
@@ -102,7 +101,6 @@ export default function App() {
 
   const score = getDopamineLevel();
 
-  // Test Utilities
   const handleInjectSampleData = () => {
     const sampleLog: MobileLog = {
       date: new Date().toISOString().split('T')[0],
@@ -118,7 +116,7 @@ export default function App() {
     setLog(sampleLog);
     if (chatLog.length === 0) {
       setChatLog([
-        { sender: 'ai', text: 'AppTin 테스트 세션이 시작되었습니다. 오늘의 루틴 상태에 대해 말씀해주세요.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        { sender: 'ai', text: 'Gemini AI 연동이 완료되었습니다! 오늘 하루 디지털 활동이나 루틴 고민에 대해 편하게 물어보세요.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
       ]);
     }
   };
@@ -142,7 +140,7 @@ export default function App() {
 
   const handleShareMyRoutine = () => {
     if (!log) {
-      alert('공유할 일일 측정 데이터가 없습니다. 먼저 사용량을 측적해주세요.');
+      alert('공유할 일일 측정 데이터가 없습니다. 먼저 사용량을 측정해주세요.');
       return;
     }
     const routineSummary = newRoutineText.trim() || `오늘 몰입 지수 ${score}% 달성. 작업시간 ${log.apps.find(a => a.type === 'Work')?.mins || 0}분 완료.`;
@@ -162,20 +160,38 @@ export default function App() {
     setFeedPosts(feedPosts.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p));
   };
 
-  const handleSendChat = (e: React.FormEvent) => {
+  // Live Gemini AI Chat Integration
+  const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || isAiLoading) return;
 
-    const userMsg: ChatMessage = { sender: 'user', text: chatInput, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    let aiText = mode === 'spicy'
-      ? `그렇군요. 하지만 변명보다는 내일 숏폼 타이머를 15분 줄여보는 행동이 훨씬 유익합니다.`
-      : mode === 'mild'
-      ? `오늘 피곤하셨군요! 스스로를 너무 자책하지 마시고 내일 가볍게 10분만 줄여봐요.`
-      : `원인을 파악하신 것은 긍정적입니다. 내일은 밤 10시 흑백 모드를 활용해 보세요.`;
+    const userText = chatInput.trim();
+    const userMsg: ChatMessage = {
+      sender: 'user',
+      text: userText,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
 
-    const aiMsg: ChatMessage = { sender: 'ai', text: aiText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    setChatLog(prev => [...prev, userMsg, aiMsg]);
+    setChatLog(prev => [...prev, userMsg]);
     setChatInput('');
+    setIsAiLoading(true);
+
+    const contextLogs = log ? `몰입도: ${score}%, 작업: ${log.apps.find(a => a.type === 'Work')?.mins || 0}분, 미디어: ${log.apps.filter(a => a.type === 'Media' || a.type === 'Social').reduce((a, b) => a + b.mins, 0)}분` : undefined;
+
+    const aiReplyText = await askGeminiCoach({
+      mode: mode,
+      userMessage: userText,
+      contextLogs: contextLogs
+    });
+
+    const aiMsg: ChatMessage = {
+      sender: 'ai',
+      text: aiReplyText,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setChatLog(prev => [...prev, aiMsg]);
+    setIsAiLoading(false);
   };
 
   return (
@@ -242,7 +258,7 @@ export default function App() {
               <div style={{ background: '#1e293b', borderRadius: '10px', padding: '30px 20px', border: '1px solid #334155', textAlign: 'center', marginBottom: '16px' }}>
                 <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#f8fafc' }}>측정된 하루 데이터가 없습니다</h3>
                 <p style={{ margin: '0 0 20px 0', fontSize: '12px', color: '#94a3b8', lineHeight: '1.5' }}>
-                  배포 전 테스트를 위해 샘플 데이터 세트를 불러오거나 아래 버튼을 눌러 측정을 시작하세요.
+                  실제 Gemini AI 테스트를 위해 데이터를 불러오거나 아래 버튼을 누르세요.
                 </p>
                 <button
                   onClick={handleInjectSampleData}
@@ -325,14 +341,18 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: AI INTERACTIVE CHAT */}
+        {/* TAB 2: AI INTERACTIVE CHAT (LIVE GEMINI API INTEGRATED) */}
         {tab === 'chat' && (
           <div>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f8fafc' }}>AI 코치 1:1 상담</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '14px', color: '#f8fafc' }}>Gemini AI 코치 1:1 상담</h3>
+              <span style={{ fontSize: '11px', color: '#22c55e', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px' }}>LIVE AI 연동됨</span>
+            </div>
+
             <div style={{ background: '#1e293b', borderRadius: '10px', padding: '12px', minHeight: '300px', maxHeight: '380px', overflowY: 'auto', border: '1px solid #334155', marginBottom: '12px' }}>
               {chatLog.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', paddingTop: '100px' }}>
-                  아직 대화 내역이 없습니다. 아래 입력창에 메시지를 남겨보세요.
+                  아직 대화 내역이 없습니다. 아래 입력창에 Gemini AI에게 전달할 메시지를 남겨보세요.
                 </div>
               ) : (
                 chatLog.map((msg, idx) => (
@@ -344,13 +364,21 @@ export default function App() {
                       background: msg.sender === 'user' ? '#38bdf8' : '#0f172a',
                       color: msg.sender === 'user' ? '#0f172a' : '#e2e8f0',
                       fontSize: '12px',
-                      lineHeight: '1.4'
+                      lineHeight: '1.4',
+                      whiteSpace: 'pre-wrap'
                     }}>
                       {msg.text}
                       <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px', textAlign: 'right' }}>{msg.time}</div>
                     </div>
                   </div>
                 ))
+              )}
+              {isAiLoading && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' }}>
+                  <div style={{ background: '#0f172a', color: '#38bdf8', padding: '8px 12px', borderRadius: '8px', fontSize: '12px' }}>
+                    Gemini AI가 라이브 분석 중...
+                  </div>
+                </div>
               )}
             </div>
 
@@ -359,10 +387,11 @@ export default function App() {
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="오늘 하루나 피로 원인 입력..."
+                placeholder={isAiLoading ? "Gemini가 대답을 생성 중입니다..." : "Gemini AI에게 오늘 하루 고민/질문 입력..."}
+                disabled={isAiLoading}
                 style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #334155', background: '#1e293b', color: '#fff', fontSize: '12px' }}
               />
-              <button type="submit" style={{ padding: '10px 14px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '6px', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>
+              <button type="submit" disabled={isAiLoading} style={{ padding: '10px 14px', background: isAiLoading ? '#64748b' : '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '6px', fontWeight: '600', fontSize: '12px', cursor: isAiLoading ? 'default' : 'pointer' }}>
                 전송
               </button>
             </form>
@@ -403,7 +432,6 @@ export default function App() {
         {/* TAB 4: GROUP & ROUTINE SHARING */}
         {tab === 'social' && (
           <div>
-            {/* Group Header & Invite Link */}
             <section style={{ background: '#1e293b', borderRadius: '10px', padding: '14px', border: '1px solid #38bdf8', marginBottom: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div>
@@ -431,7 +459,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* Share My Today Routine Form */}
             <section style={{ background: '#1e293b', borderRadius: '10px', padding: '14px', border: '1px solid #334155', marginBottom: '14px' }}>
               <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#f8fafc' }}>오늘 내 하루 루틴 공유하기</h4>
               <input
@@ -459,7 +486,6 @@ export default function App() {
               </button>
             </section>
 
-            {/* Group Member Routine Sharing Feed */}
             <section style={{ background: '#1e293b', borderRadius: '10px', padding: '14px', border: '1px solid #334155' }}>
               <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#f8fafc', fontWeight: '700' }}>그룹원 실시간 피드 ({feedPosts.length}건)</h4>
               {feedPosts.length === 0 ? (
@@ -501,7 +527,7 @@ export default function App() {
         background: '#1e293b',
         borderTop: '1px solid #334155',
         display: 'flex',
-        justifyContent: 'space-around',
+        justify.content: 'space-around',
         padding: '10px 0',
         zIndex: 100
       }}>
