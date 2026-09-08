@@ -1,0 +1,8 @@
+﻿# Git Ignore Rule for Digital-Life AI Log
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.env
+*.json
+!.gitignore
