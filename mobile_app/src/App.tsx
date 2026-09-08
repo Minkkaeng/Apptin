@@ -40,7 +40,7 @@ const STORAGE_KEYS = {
 };
 
 export default function App() {
-  const [tab, setTab] = useState<'report' | 'chat' | 'routine' | 'social'>('report');
+  const [tab, setTab] = useState<'report' | 'chat' | 'group' | 'settings' | 'help'>('report');
   
   const [mode, setMode] = useState<'mild' | 'balanced' | 'spicy'>(() => {
     return (localStorage.getItem(STORAGE_KEYS.MODE) as any) || 'spicy';
@@ -230,11 +230,11 @@ export default function App() {
       minHeight: '100vh',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       boxSizing: 'border-box',
-      paddingBottom: '80px',
+      paddingBottom: '85px',
       filter: isGrayscale ? 'grayscale(100%)' : 'none',
       transition: 'filter 0.3s ease'
     }}>
-      {/* Header - Upscaled Mobile Touch UI */}
+      {/* Header */}
       <header style={{
         padding: '24px 20px 18px',
         background: '#1e293b',
@@ -249,33 +249,13 @@ export default function App() {
               AppTin <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '500' }}>App + Routine</span>
             </h1>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              onClick={() => setIsGrayscale(!isGrayscale)}
-              style={{
-                background: isGrayscale ? '#38bdf8' : '#0f172a',
-                color: isGrayscale ? '#0f172a' : '#e2e8f0',
-                border: '1px solid #475569',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer'
-              }}
-            >
-              {isGrayscale ? '흑백 ON' : '흑백 OFF'}
-            </button>
-            <button
-              onClick={handleResetData}
-              style={{ background: '#0f172a', color: '#f87171', border: '1px solid #475569', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
-            >
-              초기화
-            </button>
+          <div style={{ fontSize: '13px', color: '#38bdf8', border: '1px solid #334155', padding: '6px 12px', borderRadius: '8px', background: '#0f172a', fontWeight: '700' }}>
+            연속 4일 실천
           </div>
         </div>
       </header>
 
-      {/* Main Content Areas - Upscaled Mobile Typography */}
+      {/* Main Content Areas */}
       <main style={{ padding: '20px' }}>
 
         {/* TAB 1: REPORT & DASHBOARD */}
@@ -307,31 +287,6 @@ export default function App() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', margin: '12px 0 0 0', fontSize: '13px', color: '#94a3b8', fontWeight: '500' }}>
                     <span>작업 몰입: {log.apps.find(a => a.type === 'Work')?.mins || 0}분</span>
                     <span>미디어 시청: {log.apps.filter(a => a.type === 'Media' || a.type === 'Social').reduce((acc, curr) => acc + curr.mins, 0)}분</span>
-                  </div>
-                </section>
-
-                <section style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '700' }}>AI 분석 강도 선택</div>
-                  <div style={{ display: 'flex', gap: '8px', background: '#1e293b', padding: '6px', borderRadius: '12px', border: '1px solid #334155' }}>
-                    {(['mild', 'balanced', 'spicy'] as const).map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => setMode(m)}
-                        style={{
-                          flex: 1,
-                          padding: '12px 0',
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: mode === m ? '#38bdf8' : 'transparent',
-                          color: mode === m ? '#0f172a' : '#94a3b8',
-                          cursor: 'pointer',
-                          fontWeight: '800',
-                          fontSize: '15px'
-                        }}
-                      >
-                        {m === 'mild' ? '순한맛' : m === 'balanced' ? '보통' : '매운맛'}
-                      </button>
-                    ))}
                   </div>
                 </section>
 
@@ -426,39 +381,8 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: ROUTINE & SLEEP ASSIST */}
-        {tab === 'routine' && (
-          <div>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#f8fafc', fontWeight: '800' }}>스마트 수면 & 루틴 가이드</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ background: '#1e293b', padding: '18px', borderRadius: '16px', border: '1px solid #334155' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <strong style={{ fontSize: '15px', color: '#f8fafc', fontWeight: '700' }}>수면 전 흑백 모드 실행</strong>
-                  <button
-                    onClick={() => setIsGrayscale(!isGrayscale)}
-                    style={{ padding: '8px 14px', background: isGrayscale ? '#22c55e' : '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '800', cursor: 'pointer' }}
-                  >
-                    {isGrayscale ? '설정 완료' : '지금 실행'}
-                  </button>
-                </div>
-                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8', lineHeight: '1.5' }}>알람을 유지한 상태로 스마트폰 디스플레이 색상을 제한하여 도파민 유혹 감소.</p>
-              </div>
-
-              <div style={{ background: '#1e293b', padding: '18px', borderRadius: '16px', border: '1px solid #334155' }}>
-                <strong style={{ fontSize: '15px', color: '#f8fafc', fontWeight: '700' }}>침대 2m 원거리 알람 위치</strong>
-                <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#94a3b8', lineHeight: '1.5' }}>아침 상체 일으키기 동선을 확보하여 깔끔한 아침 기상 루틴을 지원합니다.</p>
-              </div>
-
-              <div style={{ background: '#1e293b', padding: '18px', borderRadius: '16px', border: '1px solid #334155' }}>
-                <strong style={{ fontSize: '15px', color: '#f8fafc', fontWeight: '700' }}>저녁 10시 숏폼 타이머 제한</strong>
-                <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#94a3b8', lineHeight: '1.5' }}>유튜브/인스타그램 사용 시간을 저녁 시간대 15분 단위로 일시 제한합니다.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: GROUP & ROUTINE SHARING */}
-        {tab === 'social' && (
+        {/* TAB 3: GROUP & ROUTINE SHARING */}
+        {tab === 'group' && (
           <div>
             <section style={{ background: '#1e293b', borderRadius: '16px', padding: '18px', border: '1px solid #38bdf8', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -542,6 +466,114 @@ export default function App() {
             </section>
           </div>
         )}
+
+        {/* TAB 4: SETTINGS (AI MODE, THEME, DATA RESET) */}
+        {tab === 'settings' && (
+          <div>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#f8fafc', fontWeight: '800' }}>환경 및 테마 설정</h3>
+
+            {/* AI Coach Mode Selector */}
+            <section style={{ background: '#1e293b', borderRadius: '16px', padding: '18px', border: '1px solid #334155', marginBottom: '16px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#f8fafc', fontWeight: '700' }}>AI 분석 강도 선택</h4>
+              <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: '#94a3b8', lineHeight: '1.5' }}>
+                AI 코치가 하루 리포트를 작성하거나 대화할 때의 피드백 톤과 직설적인 강도를 조절합니다.
+              </p>
+              <div style={{ display: 'flex', gap: '8px', background: '#0f172a', padding: '6px', borderRadius: '12px', border: '1px solid #334155' }}>
+                {(['mild', 'balanced', 'spicy'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    style={{
+                      flex: 1,
+                      padding: '12px 0',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: mode === m ? '#38bdf8' : 'transparent',
+                      color: mode === m ? '#0f172a' : '#94a3b8',
+                      cursor: 'pointer',
+                      fontWeight: '800',
+                      fontSize: '14px'
+                    }}
+                  >
+                    {m === 'mild' ? '순한맛' : m === 'balanced' ? '보통' : '매운맛'}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Grayscale Theme Setting */}
+            <section style={{ background: '#1e293b', borderRadius: '16px', padding: '18px', border: '1px solid #334155', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div>
+                  <strong style={{ fontSize: '15px', color: '#f8fafc', fontWeight: '700' }}>수면 가이드 흑백 모드</strong>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>시각적 도파민 유혹을 줄이는 디스플레이 흑백 필터</div>
+                </div>
+                <button
+                  onClick={() => setIsGrayscale(!isGrayscale)}
+                  style={{ padding: '10px 16px', background: isGrayscale ? '#22c55e' : '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  {isGrayscale ? '흑백 ON' : '흑백 OFF'}
+                </button>
+              </div>
+            </section>
+
+            {/* Data Management */}
+            <section style={{ background: '#1e293b', borderRadius: '16px', padding: '18px', border: '1px solid #334155' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#f8fafc', fontWeight: '700' }}>데이터 관리 및 초기화</h4>
+              <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: '#94a3b8', lineHeight: '1.5' }}>
+                로컬에 저장된 일일 측정 기록, AI 대화 내역 및 피드 데이터를 초기화합니다.
+              </p>
+              <button
+                onClick={handleResetData}
+                style={{ width: '100%', padding: '14px', background: '#0f172a', color: '#f87171', border: '1px solid #ef4444', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}
+              >
+                전체 로컬 데이터 초기화
+              </button>
+            </section>
+          </div>
+        )}
+
+        {/* TAB 5: HELP & PRIVACY POLICY */}
+        {tab === 'help' && (
+          <div>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#f8fafc', fontWeight: '800' }}>고객센터 및 개인정보처리방침</h3>
+
+            {/* Guide Section */}
+            <section style={{ background: '#1e293b', borderRadius: '16px', padding: '18px', border: '1px solid #334155', marginBottom: '16px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#38bdf8', fontWeight: '700' }}>AppTin 서비스 사용 지침</h4>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
+                <li><strong>PC 트래커 연동</strong>: Windows PC에서 <code style={{ color: '#38bdf8' }}>pc_tracker.py</code> 스크립트를 실행하여 작업 시간을 자동 기록합니다.</li>
+                <li><strong>모바일 권한 승인</strong>: 안드로이드 설정 ➔ 사용 정보 접근 권한에서 AppTin 앱을 허용해주세요.</li>
+                <li><strong>수면 루틴 추천</strong>: 저녁 10시 이후 알람을 설정한 뒤 디스플레이를 흑백 모드로 전환하면 깊은 수면에 도움이 됩니다.</li>
+              </ul>
+            </section>
+
+            {/* Privacy Policy */}
+            <section style={{ background: '#1e293b', borderRadius: '16px', padding: '18px', border: '1px solid #334155', marginBottom: '16px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#4ade80', fontWeight: '700' }}>개인정보 처리방침 안내</h4>
+              <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#cbd5e1', lineHeight: '1.5' }}>
+                AppTin 서비스는 사용자의 개인정보 수집 및 정보보호를 최우선으로 선언합니다.
+              </p>
+              <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#94a3b8', lineHeight: '1.6' }}>
+                <li><strong>로컬 저장 우선</strong>: 모든 작업 창 및 모바일 사용량 통계는 사용자 기기 내부 LocalStorage에만 저장되며 외부 전송되지 않습니다.</li>
+                <li><strong>민감 데이터 마스킹</strong>: 비밀번호나 암호 입력 창 제목은 자동 마스킹 처리된 후 AI 리포트 생성에 사용됩니다.</li>
+                <li><strong>AI API 전송</strong>: 리포트 작성을 위한 통계 요약 데이터만 암호화(HTTPS)를 통해 구글 Gemini API로 전송되며, 저장되지 않고 즉시 소멸합니다.</li>
+              </ol>
+            </section>
+
+            {/* FAQ & Support */}
+            <section style={{ background: '#1e293b', borderRadius: '16px', padding: '18px', border: '1px solid #334155' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#f8fafc', fontWeight: '700' }}>고객 지원 및 문의</h4>
+              <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#cbd5e1' }}>
+                서비스 이용 중 궁금하신 점이나 버그 제보는 아래 이메일로 보내주세요.
+              </p>
+              <div style={{ background: '#0f172a', padding: '12px', borderRadius: '8px', fontSize: '13px', color: '#38bdf8', fontWeight: '600' }}>
+                📧 고객센터 문의: support@apptin.app
+              </div>
+            </section>
+          </div>
+        )}
+
       </main>
 
       {/* SNS Share Modal Component */}
@@ -624,7 +656,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Bottom Navigation - Large Touch Targets */}
+      {/* Bottom Navigation */}
       <nav style={{
         position: 'fixed',
         bottom: 0,
@@ -642,8 +674,9 @@ export default function App() {
         {[
           { id: 'report', label: '리포트' },
           { id: 'chat', label: 'AI 상담' },
-          { id: 'routine', label: '루틴설정' },
-          { id: 'social', label: '그룹&공유' }
+          { id: 'group', label: '그룹&공유' },
+          { id: 'settings', label: '설정' },
+          { id: 'help', label: '고객센터' }
         ].map((t) => (
           <button
             key={t.id}
@@ -652,7 +685,7 @@ export default function App() {
               background: 'transparent',
               border: 'none',
               color: tab === t.id ? '#38bdf8' : '#94a3b8',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: tab === t.id ? '800' : '600',
               cursor: 'pointer'
             }}
