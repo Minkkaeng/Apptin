@@ -40,7 +40,7 @@ const STORAGE_KEYS = {
 };
 
 export default function App() {
-  const [tab, setTab] = useState<'report' | 'chat' | 'routine' | 'social'>('report');
+  const [tab, setTab] = useState<'report' | 'chat' | 'routine' | 'social'>('social');
   
   const [mode, setMode] = useState<'mild' | 'balanced' | 'spicy'>(() => {
     return (localStorage.getItem(STORAGE_KEYS.MODE) as any) || 'spicy';
@@ -68,6 +68,7 @@ export default function App() {
   const [chatInput, setChatInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [groupCode] = useState('APPTIN-8291');
+  const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [newRoutineText, setNewRoutineText] = useState('');
 
@@ -132,10 +133,30 @@ export default function App() {
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(`https://apptin.app/join/${groupCode}`);
+  const handleCopyLinkOnly = () => {
+    const shareUrl = `https://apptin.app/join/${groupCode}`;
+    navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSnsShare = (platform: 'kakao' | 'twitter' | 'facebook' | 'native') => {
+    const shareUrl = `https://apptin.app/join/${groupCode}`;
+    const text = `AppTin(앱틴) - 나만의 AI 디지털 갓생 & 루틴 모임에 참여해보세요! (초대코드: ${groupCode})`;
+
+    if (platform === 'native' && navigator.share) {
+      navigator.share({ title: 'AppTin 초대', text: text, url: shareUrl }).catch(() => {});
+      return;
+    }
+
+    if (platform === 'twitter') {
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+    } else if (platform === 'facebook') {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+    } else if (platform === 'kakao') {
+      alert(`[카카오톡 공유]\n\n${text}\n${shareUrl}\n\n위 문구가 클립보드에 복사되었습니다! 카카오톡 채팅창에 붙여넣어 공유하세요.`);
+      handleCopyLinkOnly();
+    }
   };
 
   const handleShareMyRoutine = () => {
@@ -438,10 +459,10 @@ export default function App() {
                   <span style={{ fontSize: '11px', color: '#94a3b8' }}>그룹원 실시간 공유 참여 중</span>
                 </div>
                 <button
-                  onClick={handleCopyLink}
+                  onClick={() => setShowShareModal(true)}
                   style={{
                     padding: '6px 12px',
-                    background: copied ? '#22c55e' : '#38bdf8',
+                    background: '#38bdf8',
                     color: '#0f172a',
                     border: 'none',
                     borderRadius: '6px',
@@ -450,7 +471,7 @@ export default function App() {
                     cursor: 'pointer'
                   }}
                 >
-                  {copied ? '링크 복사됨!' : '초대 링크 공유'}
+                  초대 공유하기
                 </button>
               </div>
               <div style={{ fontSize: '11px', color: '#64748b', background: '#0f172a', padding: '6px 10px', borderRadius: '4px' }}>
@@ -514,6 +535,86 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* SNS Share Modal Component */}
+      {showShareModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#1e293b',
+            border: '1px solid #334155',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '360px',
+            padding: '20px',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '15px', color: '#f8fafc', fontWeight: '700' }}>AppTin 모임 공유하기</h3>
+              <button
+                onClick={() => setShowShareModal(false)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '16px', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#cbd5e1', lineHeight: '1.4' }}>
+              원하는 채널을 선택하여 친구들에게 그룹 초대 링크를 보내고 함께 루틴을 실천해보세요!
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
+              <button
+                onClick={() => handleSnsShare('kakao')}
+                style={{ padding: '12px', background: '#fee500', color: '#000', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+              >
+                카카오톡
+              </button>
+              <button
+                onClick={() => handleSnsShare('twitter')}
+                style={{ padding: '12px', background: '#1da1f2', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+              >
+                트위터 / X
+              </button>
+              <button
+                onClick={() => handleSnsShare('facebook')}
+                style={{ padding: '12px', background: '#1877f2', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+              >
+                페이스북
+              </button>
+              <button
+                onClick={() => handleSnsShare('native')}
+                style={{ padding: '12px', background: '#38bdf8', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+              >
+                기기 공유 API
+              </button>
+            </div>
+
+            <div style={{ background: '#0f172a', padding: '10px', borderRadius: '6px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                https://apptin.app/join/{groupCode}
+              </span>
+              <button
+                onClick={handleCopyLinkOnly}
+                style={{ padding: '4px 8px', background: copied ? '#22c55e' : '#334155', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
+              >
+                {copied ? '복사됨!' : '링크 복사'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <nav style={{
