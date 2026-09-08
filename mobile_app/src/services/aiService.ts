@@ -1,9 +1,9 @@
 ﻿/**
- * aiService.ts: AppTin Gemini AI Live 연동 서비스 모듈
+ * aiService.ts: AppTin Gemini AI Live 연동 서비스 모듈 (Gemini 3.6 Flash 모델 적용)
  */
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyDxwFLgY6xiCkxEWjS7io1FsCdntMfdsK0";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 export interface AiCoachOptions {
   mode: 'mild' | 'balanced' | 'spicy';
@@ -46,16 +46,16 @@ ${contextLogs ? `[오늘의 사용자 사용 통계]:\n${contextLogs}\n` : ''}
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.error("Gemini API Error Response:", errText);
-      return "AI 연결 상태가 원활하지 않습니다. (Gemini API 오프라인)";
+      const errData = await response.json();
+      console.error("Gemini API Error:", errData);
+      return `AI 응답 오류 (${response.status}): ${errData?.error?.message || "잠시 후 다시 시도해주세요."}`;
     }
 
     const data = await response.json();
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return reply || "죄송합니다. 답변을 생성하지 못했습니다.";
-  } catch (error) {
-    console.error("Gemini API Call Error:", error);
+    return reply || "죄송합니다. 대답을 생성하지 못했습니다.";
+  } catch (error: any) {
+    console.error("Gemini API Exception:", error);
     return "네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
   }
 }
