@@ -140,9 +140,23 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Improved Kakao Auto Direct Launch & SNS Share logic
   const handleSnsShare = (platform: 'kakao' | 'twitter' | 'facebook' | 'native') => {
     const shareUrl = `https://apptin.app/join/${groupCode}`;
     const text = `AppTin(앱틴) - 나만의 AI 디지털 갓생 & 루틴 모임에 참여해보세요! (초대코드: ${groupCode})`;
+
+    if (platform === 'kakao') {
+      // 1. 카카오톡 웹/모바일 딥링크 자동 실행 시도 (kakaolink://)
+      const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (isMobile) {
+        // 모바일 스마트폰: 카카오톡 앱으로 즉시 자동 이동 및 텍스트 딥링크 전송
+        window.location.href = `kakaolink://send?text=${encodeURIComponent(text + '\n' + shareUrl)}`;
+      } else {
+        // PC 브라우저: 카카오톡 웹 공유 팝업 실행
+        window.open(`https://sharer.kakao.com/talk/friends/picker/link?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`, '_blank');
+      }
+      return;
+    }
 
     if (platform === 'native' && navigator.share) {
       navigator.share({ title: 'AppTin 초대', text: text, url: shareUrl }).catch(() => {});
@@ -153,9 +167,6 @@ export default function App() {
       window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
     } else if (platform === 'facebook') {
       window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
-    } else if (platform === 'kakao') {
-      alert(`[카카오톡 공유]\n\n${text}\n${shareUrl}\n\n위 문구가 클립보드에 복사되었습니다! 카카오톡 채팅창에 붙여넣어 공유하세요.`);
-      handleCopyLinkOnly();
     }
   };
 
@@ -571,7 +582,7 @@ export default function App() {
             </div>
             
             <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#cbd5e1', lineHeight: '1.4' }}>
-              원하는 채널을 선택하여 친구들에게 그룹 초대 링크를 보내고 함께 루틴을 실천해보세요!
+              원하는 채널을 선택하여 카카오톡 앱 자동 실행 또는 SNS 공유로 친구들을 초대해보세요!
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
@@ -579,7 +590,7 @@ export default function App() {
                 onClick={() => handleSnsShare('kakao')}
                 style={{ padding: '12px', background: '#fee500', color: '#000', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
               >
-                카카오톡
+                카카오톡 (앱 실행)
               </button>
               <button
                 onClick={() => handleSnsShare('twitter')}
